@@ -118,4 +118,4 @@ prof = "예리"
 - 혹은 과자를 사주셔도 됩니다.
 
 ## 코로나 안전수칙
-![코로나 안전수칙](http://ncov.mohw.go.kr/static/image/content/baroview_poster2.png)
+![코로나 안전수칙](pictures/corona.png)
