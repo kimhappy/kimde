@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use serde::{ Serialize, Deserialize };
 use fantoccini::*;
 use fantoccini::error::*;
+use webdriver::capabilities::Capabilities;
 
 #[derive(Serialize, Deserialize)]
 struct Course {
@@ -42,8 +43,13 @@ async fn main() -> Result< (), CmdError > {
         expect("failed to read \"config.toml\"");
 
     // 웹 드라이버 연결
+    let mut caps = Capabilities::new();
+    let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
+    caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
+    // caps.insert("chromeOptions".to_string(), chrome_opts);
+
     let mut client =
-        Client::new(format!("http://localhost:{}", config.port).as_str()).await.
+        Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await.
         expect("Failed to connect to WebDriver");
     client.set_window_rect(0, 0, 1280, 1280).await?;
 

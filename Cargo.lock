@@ -470,12 +470,14 @@ dependencies = [
 
 [[package]]
 name = "kimde"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fantoccini",
  "serde",
+ "serde_json",
  "tokio",
  "toml",
+ "webdriver",
 ]
 
 [[package]]
