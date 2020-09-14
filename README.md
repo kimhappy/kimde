@@ -2,7 +2,7 @@
 
 ![logo](pictures/logo.png)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.3-yellow)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.4-yellow)
 
 ***
 
@@ -53,6 +53,8 @@ semester = "2020년 2학기"
 - 실행이 끝나면, `chromedriver.exe`를 종료합니다.
 
 ### 5. 설정 파일 관리(고급)
+
+#### i. 출결 확인 제외하기
 - 어떤 교수님들은 녹강 대신 실강만 진행합니다.
 - `config.toml`을 편집해 해당 과목을 출결 확인에서 제외할 수 있습니다.
 - 이 방법은 KIMDE를 1회 이상 실행한 이후에 사용할 수 있습니다.
@@ -120,6 +122,18 @@ name = "Fool"
 prof = "예리"
 ```
 
+#### ii. Chrome 창 보이게 하기
+* 검은 창 뒤에서 무슨 일이 진행되고 있는지 알고 싶을 때가 있습니다.
+* `config.toml`에 `headless = false` 옵션을 추가해 주세요.
+
+```
+port = 9515
+id = "my_id"
+password = "my_password"
+semester = "2020년 2학기"
+headless = false
+```
+
 ### 6. 버그 제보, 의견
 - 버그를 발견하거나 건의할 의견이 있다면, [카카오톡 오픈채팅](https://open.kakao.com/o/sSsjNIwc)으로 연락주세요.
 - 다음은 버그의 예시입니다.
@@ -133,21 +147,23 @@ prof = "예리"
 
 Q1. 검은 창이 반짝 하고 닫혀요ㅠㅠ
 
-A1. `config.toml`을 잘 작성했나 확인해 주세요.
-***
-Q2. 잘 작성했는데도 닫혀요ㅠㅠ
+A1. 검은 창이 반짝 하고 닫히는 것은 여러 원인이 있습니다. 다음의 사항들을 체크해 주세요.
 
-A2. [확장자를 보이게 한 뒤](https://mainia.tistory.com/5104), `config.toml.txt`을 `config.toml`로 바꿔주세요.
-***
-Q3. 그래도 닫혀요ㅠㅠ
+1. `config.toml`을 잘 작성했나 확인해 주세요.
+2. [확장자를 보이게 한 뒤](https://mainia.tistory.com/5104), `config.toml.txt`을 `config.toml`로 바꿔주세요.
+3. 사용자가 직접 Chrome을 통해 로그인할 때, 비밀번호를 변경하라는 창이 뜨지 않는지 확인해 주세요. 3개월 이상 비밀번호를 바꾸지 않으면 실행되지 않는 것은 의도된 동작으로, 이렇게라도 비밀번호를 주기적으로 변경하게 하기 위함입니다.
+4. 종료 후 다시 실행해 주세요. 크롬과 크롬 브라우저 버전이 85인지 확인해 주세요.
 
-A3. 종료 후 다시 실행해 주세요. 크롬과 크롬 브라우저 버전이 85인지 확인해 주세요.
-***
-Q3. 5분 이상 실행했는데 반응이 없어요ㅠㅠ
 
-A3. 종료 후 다시 실행해 주세요. 재차 반복해도 반응이 없으면 버그로 제보해 주세요.
+Q2. 5분 이상 실행했는데 반응이 없어요ㅠㅠ
+
+A2. 종료 후 다시 실행해 주세요. 재차 반복해도 반응이 없으면 `config.toml`에 `headless = false` 옵션을 추가하고 어떤 창에서 멈추는지 캡쳐해서 제보해 주세요.
 
 ## 릴리즈 노트
+
+### v0.1.4
+- 이제 공지가 떠도 공지를 닫고 올바르게 동작합니다.
+- `config.toml`의 `headless` 옵션을 통해 Chrome 창이 보여지게 할 수 있습니다.
 
 ### v0.1.3
 - 이제 테이블 모드에서도 올바르게 동작합니다.

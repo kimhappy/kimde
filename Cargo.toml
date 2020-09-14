@@ -1,6 +1,6 @@
 [package]
 name = "kimde"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["POMMI3R"]
 edition = "2018"
 

@@ -19,6 +19,7 @@ struct Config {
     id      : String,
     password: String,
     semester: String,
+    headless: Option< bool >,
     course  : Option< Vec< Course > >,
 }
 
@@ -42,15 +43,18 @@ async fn main() -> Result< (), CmdError > {
         Config::read_from("config.toml").
         expect("failed to read \"config.toml\"");
 
-    // 웹 드라이버 연결
-    let mut caps = Capabilities::new();
-    let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
-    caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
+    let mut client = match config.headless {
+        None | Some(true) => {
+            let mut caps = Capabilities::new();
+            let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
+            caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
+            Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await
+        },
+        Some(false) => {
+            Client::new(format!("http://localhost:{}", config.port).as_str()).await
+        }
+    }.expect("Failed to connect to WebDriver");
 
-    let mut client =
-        Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await.
-        // Client::new(format!("http://localhost:{}", config.port).as_str()).await.
-        expect("Failed to connect to WebDriver");
     client.set_window_rect(0, 0, 1280, 1280).await?;
 
     // 블랙보드 접속
@@ -150,7 +154,16 @@ async fn main() -> Result< (), CmdError > {
         let ls =
             client.find_all(Locator::Css(".placement-link")).await?;
         let cc = ls[ 1 ].clone();
-        client = cc.click().await?;
+
+        // 공지 닫기
+        match cc.clone().click().await {
+            Ok(cl) => client = cl,
+            Err(_) => {
+                let xb = client.wait_for_find(Locator::Css("[data-analytics-id=\"course.announcements.modal.close.button\"]")).await?;
+                xb.click().await?;
+                client = cc.click().await?
+            }
+        }
 
         let (mut P, mut F): (i32, i32) = (0, 0);
         let mut ncs = Vec::new();
