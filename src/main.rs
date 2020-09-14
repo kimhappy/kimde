@@ -46,10 +46,10 @@ async fn main() -> Result< (), CmdError > {
     let mut caps = Capabilities::new();
     let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
     caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
-    // caps.insert("chromeOptions".to_string(), chrome_opts);
 
     let mut client =
         Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await.
+        // Client::new(format!("http://localhost:{}", config.port).as_str()).await.
         expect("Failed to connect to WebDriver");
     client.set_window_rect(0, 0, 1280, 1280).await?;
 
@@ -82,14 +82,17 @@ async fn main() -> Result< (), CmdError > {
         // 현재 학기 페이지 접속
         let sem =
             client.wait_for_find(Locator::Css("[data-dropdown=\"courses-terms\"]")).await?;
-
         client = sem.click().await?;
 
         let now_sem =
             client.wait_for_find(Locator::Css(format!("[title=\"{}\"]", config.semester).as_str())).await.
             expect("Invalid semester");
-
         client = now_sem.click().await?;
+
+        // 두 번째 보기
+        let tw =
+            client.wait_for_find(Locator::Css("[class=\"toggle-label input label-two js-label-toggle-grid\"]")).await?;
+        client = tw.click().await?;
 
         // 코스 id, 과목명, 교수명 긁어오기
         let mut course = Vec::new();
@@ -108,7 +111,6 @@ async fn main() -> Result< (), CmdError > {
 
             let id =
                 elem.clone().attr("data-course-id").await?.unwrap();
-
             ids.push(id);
         }
 
@@ -119,7 +121,6 @@ async fn main() -> Result< (), CmdError > {
                 client.wait_for_find(Locator::Css("[data-ng-bind]")).await?.html(true).await?;
             let prof =
                 client.wait_for_find(Locator::Css("[class=\"name ellipsis\"] > bb-username > bdi")).await?.html(true).await?;
-
             course.push(Course { id, name, prof });
         }
 
@@ -141,7 +142,6 @@ async fn main() -> Result< (), CmdError > {
             bs.last().unwrap().clone();
         let tools_url =
             tools.attr("href").await?.unwrap();
-
         client.goto(tools_url.as_str()).await?;
 
         // '온라인 출석 조회' 접속

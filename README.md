@@ -2,7 +2,7 @@
 
 ![logo](pictures/logo.png)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.2-yellow)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.3-yellow)
 
 ***
 
@@ -130,6 +130,9 @@ prof = "예리"
 - 혹은 과자를 사주셔도 됩니다.
 
 ## 릴리즈 노트
+
+### v0.1.3
+- 이제 테이블 모드에서도 올바르게 동작합니다.
 
 ### v0.1.2
 - 이제 Chrome 창이 표시되지 않습니다.
