@@ -36,8 +36,8 @@ impl Config {
 
 #[tokio::main]
 async fn main() -> Result< (), CmdError > {
-        // config.toml 읽기
-        let mut config =
+    // config.toml 읽기
+    let mut config =
         Config::read_from("config.toml").
         expect("failed to read \"config.toml\"");
 
@@ -114,11 +114,7 @@ async fn main() -> Result< (), CmdError > {
             let prof =
                 client.wait_for_find(Locator::Css("[class=\"name ellipsis\"] > bb-username > bdi")).await?.html(true).await?;
 
-            course.push(Course {
-                id,
-                name,
-                prof,
-            });
+            course.push(Course { id, name, prof });
         }
 
         // 파일로 저장
@@ -184,12 +180,14 @@ async fn main() -> Result< (), CmdError > {
             }
         }
 
-        println!("<{}({})> [{} / {}] {}", name, prof, P, P + F, if F == 0 { "✔️" } else { "❌" });
+        println!("<{}({})> [{} / {}] {} ", name, prof, P, P + F, if F == 0 { "✔️" } else { "❌" });
 
         for nc in ncs {
-            println!("    {} 🔥", nc);
+            println!("    {} 🔥 ", nc);
         }
     }
 
+    println!("출결 확인을 완료했습니다!");
+    std::io::stdin().read(&mut [0]).unwrap();
     client.close().await
 }
