@@ -19,7 +19,7 @@ struct Config {
     id      : String,
     password: String,
     semester: String,
-    headless: Option< bool >,
+    headless: bool,
     course  : Option< Vec< Course > >,
 }
 
@@ -42,17 +42,15 @@ async fn main() -> Result< (), CmdError > {
     let mut config =
         Config::read_from("config.toml");
 
-    let mut client = match config.headless {
-        None | Some(true) => {
+    let mut client =
+        if config.headless {
             let mut caps = Capabilities::new();
             let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
             caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
             Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await
-        },
-        Some(false) => {
+        } else {
             Client::new(format!("http://localhost:{}", config.port).as_str()).await
-        }
-    }.expect("Failed to connect to WebDriver");
+        }.expect("Failed to connect to WebDriver");
 
     client.set_window_rect(0, 0, 1280, 1280).await?;
 
@@ -98,9 +96,9 @@ async fn main() -> Result< (), CmdError > {
 
         // 코스 id, 과목명, 교수명 긁어오기
         let mut course = Vec::new();
-        let mut ids = Vec::new();
 
-        client.wait_for_find(Locator::Css("[data-course-id]")).await?;
+        client.wait_for_find(Locator::Css("[data-course-id] [title]")).await?;
+        client.wait_for_find(Locator::Css("[data-course-id] .instructors [aria-hidden]")).await?;
 
         let course_blocks =
             client.find_all(Locator::Css("[data-course-id]")).await?;
@@ -113,16 +111,13 @@ async fn main() -> Result< (), CmdError > {
 
             let id =
                 elem.clone().attr("data-course-id").await?.unwrap();
-            ids.push(id);
-        }
-
-        for id in ids {
-            client.goto(format!("https://learn.hanyang.ac.kr/ultra/courses/{}/outline", id).as_str()).await?;
 
             let name =
-                client.wait_for_find(Locator::Css("[data-ng-bind]")).await?.html(true).await?;
+                elem.clone().find(Locator::Css("[title]")).await?.attr("title").await?.unwrap();
+
             let prof =
-                client.wait_for_find(Locator::Css("[class=\"name ellipsis\"] > bb-username > bdi")).await?.html(true).await?;
+                elem.clone().find(Locator::Css(".instructors [aria-hidden]")).await?.html(true).await?;
+
             course.push(Course { id, name, prof });
         }
 
@@ -147,11 +142,20 @@ async fn main() -> Result< (), CmdError > {
         client.goto(tools_url.as_str()).await?;
 
         // '온라인 출석 조회' 접속
-        client.wait_for_find(Locator::Css(".placement-link")).await?;
+        client.wait_for_find(Locator::Css(".placement-link .line-1")).await?;
 
-        let ls =
-            client.find_all(Locator::Css(".placement-link")).await?;
-        let cc = ls[ 1 ].clone();
+        let mut ls =
+            client.find_all(Locator::Css(".placement-link .line-1")).await?;
+        let mut cc = ls[ 1 ].clone();
+
+        for e in ls.iter_mut() {
+            let con = e.html(true).await.unwrap();
+
+            if con.contains("출석") {
+                cc = e.clone();
+                break
+            }
+        }
 
         // 공지 닫기
         match cc.clone().click().await {
@@ -159,7 +163,7 @@ async fn main() -> Result< (), CmdError > {
             Err(_) => {
                 let xb = client.wait_for_find(Locator::Css("[data-analytics-id=\"course.announcements.modal.close.button\"]")).await?;
                 xb.click().await?;
-                client = cc.click().await?
+                client = cc.clone().click().await?
             }
         }
 

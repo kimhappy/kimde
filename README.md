@@ -2,7 +2,7 @@
 
 ![logo](pictures/logo.png)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.5-yellow) ![Hanyang University](https://img.shields.io/badge/Hanyang-University-1d2475) ![CSE20](https://img.shields.io/badge/CSE-20-red)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.6-yellow) ![Hanyang University](https://img.shields.io/badge/Hanyang-University-1d2475) ![CSE20](https://img.shields.io/badge/CSE-20-red)
 
 ***
 
@@ -54,16 +54,17 @@ port = 9515
 id = "my_id"
 password = "my_password"
 semester = "2020년 2학기"
+headless = true
 ```
 
 - `9515`는 `ChromeDriver`가 사용하는 포트 번호입니다. 다른 웹드라이버를 사용하려면 해당 웹드라이버의 포트 번호를 입력합니다.
 - `id`와 `password`에는 자신의 블랙보드(한양대학교 포털) 아이디와 비밀번호를 입력합니다.
 - `semester`에는 현재 학기를 입력해 줍니다. 블랙보드 코스에서 현재 학기를 확인할 수 있습니다.
+- `headless`를 `true`로 설정하면 크롬 창이 보이지 않습니다. `false`로 설정하면 크롬 창을 보여줍니다.
 
 ### 4. 실행
 - 1에서 다운받은 `chromedriver.exe`를 실행합니다.
 - KIMDE 실행 파일을 실행합니다. 이 때 `config.toml`이 같은 디렉토리에 있어야 합니다.
-- 최초 실행 시 몇 가지 정보를 `config.toml`에 캐싱하느라 시간이 오래 걸릴 수 있습니다. 느긋하게 기다려 주세요.
 - 실행이 끝나면, `chromedriver.exe`를 종료합니다.
 
 ### 5. 설정 파일 관리(고급)
@@ -136,18 +137,6 @@ name = "Fool"
 prof = "예리"
 ```
 
-#### ii. Chrome 창 보이게 하기
-* 검은 창 뒤에서 무슨 일이 진행되고 있는지 알고 싶을 때가 있습니다.
-* `config.toml`에 `headless = false` 옵션을 추가해 주세요.
-
-```
-port = 9515
-id = "my_id"
-password = "my_password"
-semester = "2020년 2학기"
-headless = false
-```
-
 ## 자주 묻는 질문
 
 Q1. 검은 창이 반짝 하고 닫혀요ㅠㅠ
@@ -157,17 +146,20 @@ A1. 검은 창이 반짝 하고 닫히는 것은 여러 원인이 있습니다. 
 1. 현재 macOS에서 `config.toml`을 찾지 못하는 문제가 있습니다. 나중에 나중에 돈을 많이 벌어서 맥을 사면 수정하겠습니다ㅠㅠ
 2. `config.toml`을 잘 작성했나 확인해 주세요.
 3. [확장자를 보이게 한 뒤](https://mainia.tistory.com/5104), `config.toml.txt`을 `config.toml`로 바꿔주세요.
-4. 사용자가 직접 Chrome을 통해 로그인할 때, 비밀번호를 변경하라는 창이 뜨지 않는지 확인해 주세요. 3개월 이상 비밀번호를 바꾸지 않으면 실행되지 않는 것은 의도된 동작으로, 이렇게라도 비밀번호를 주기적으로 변경하게 하기 위함입니다.
+4. 사용자가 직접 Chrome을 통해 로그인할 때, 비밀번호를 변경하라는 창이 뜨지 않는지 확인해 주세요. 의도된 동작은 아니지만, 수정할 계획은 없습니다. 이렇게라도 비밀번호를 주기적으로 변경하게 하기 위함입니다.
 5. 종료 후 다시 실행해 주세요. 크롬과 크롬 브라우저 버전이 85인지 확인해 주세요.
-
-
+***
 Q2. 5분 이상 실행했는데 반응이 없어요ㅠㅠ
 
-A2. 종료 후 다시 실행해 주세요. 재차 반복해도 반응이 없으면 `config.toml`에 `headless = false` 옵션을 추가하고 어떤 창에서 멈추는지 캡쳐해서 제보해 주세요.
-
+A2. 종료 후 다시 실행해 주세요. 재차 반복해도 반응이 없으면 `headless`를 `false`로 설정하고 어떤 창에서 멈추는지 캡쳐해서 제보해 주세요.
+***
 Q3. 진행되다가 중간에 멈춰요ㅠㅠ
 
-A3. 공지 창이 늦게 뜨면 공지를 지우지 못하는 문제가 있습니다. 일단은 직접 공지를 해제한 후 다시 실행해 주세요. 나중에 시간이 나면 수정하겠습니다.
+A3. 가끔 공지를 지우지 못하는 문제가 있습니다. 일단은 직접 공지를 해제한 후 다시 실행해 주세요. 나중에 시간이 나면 수정하겠습니다ㅠㅠ
+***
+Q4. 글자가 깨져요ㅠㅠ
+
+A4. 일부 터미널(예: cmd)에서 글자가 깨져보일 수 있습니다. 사용에는 문제가 없습니다.
 
 ## 버그 제보, 의견
 - 버그를 발견하거나 건의할 의견이 있다면, [카카오톡 오픈채팅](https://open.kakao.com/o/sSsjNIwc)으로 연락주세요.
@@ -180,6 +172,7 @@ A3. 공지 창이 늦게 뜨면 공지를 지우지 못하는 문제가 있습�
 
 ## 도움 주신 분들
 
+- `감사합니당`님 버그 제보 감사합니다.
 - `보드`님 버그 제보, 도네 감사합니다.
 - `안냐세요`님 버그 제보 감사합니다.
 - `박소희`님 도네 감사합니다.
@@ -192,6 +185,11 @@ A3. 공지 창이 늦게 뜨면 공지를 지우지 못하는 문제가 있습�
 
 
 ## 릴리즈 노트
+
+### v0.1.6
+- 최초 실행시 속도가 빨라졌습니다.
+- 이제 `headless`가 반드시 필요합니다.
+- '온라인 출석 조회' 탭의 순서에 상관없이 실행이 가능해졌습니다.
 
 ### v0.1.5
 - `config.toml` 관련 오류 메시지가 상세해졌습니다.
