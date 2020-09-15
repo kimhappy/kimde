@@ -21,7 +21,21 @@
 ### 1. KIMDE 실행 파일 다운로드 혹은 빌드
 - KIMDE는 크로스 플랫폼 프로그램입니다. Windows, Linux, macOS 등 다양한 환경에서 사용할 수 있습니다.
 - 빌드된 실행 파일은 Windows에 한해 제공됩니다. [여기](bin)에서 다운로드 받을 수 있습니다.
-- 다른 OS를 이용하거나 빌드된 실행 파일을 신뢰할 수 없는 경우, `cargo build --release`를 사용해 직접 빌드할 수 있습니다.
+- 다른 OS를 이용하거나 빌드된 실행 파일을 신뢰할 수 없는 경우 직접 빌드해야 합니다.
+
+#### 윈도우에서 빌드하기
+
+1. [rustup](https://win.rustup.rs)을 설치합니다.
+2. [git](https://git-scm.com/download/win)을 설치합니다.
+3. 원하는 폴더에서 터미널을 열고, `git clone https://github.com/POMMI3R/kimde && cd kimde && cargo build --release` 를 통해 저장소를 다운로드 및 빌드합니다.
+4. `kimde/target/release`에 실행 파일이 생긴걸 볼 수 있습니다.
+
+#### Linux, macOS에서 빌드하기
+
+1. `curl https://sh.rustup.rs -sSf | sh`를 통해 rustup을 설치합니다.
+2. 각자 OS에 맞는 방법으로 git을 설치합니다.
+3. 원하는 폴더에서 터미널을 열고, `git clone https://github.com/POMMI3R/kimde && cd kimde && cargo build --release` 를 통해 저장소를 다운로드 및 빌드합니다.
+4. `kimde/target/release`에 실행 파일이 생긴걸 볼 수 있습니다.
 
 ### 2. 웹드라이버 설치
 - KIMDE는 웹드라이버를 사용해 출결을 한 번에 확인합니다.
