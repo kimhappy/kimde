@@ -2,7 +2,7 @@
 
 ![logo](pictures/logo.png)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.4-yellow)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![written in Rust](https://img.shields.io/badge/written%20in-Rust-orange)](https://www.rust-lang.org/) ![version](https://img.shields.io/badge/version-0.1.5-yellow)
 
 ***
 
@@ -174,6 +174,9 @@ Q2. 5분 이상 실행했는데 반응이 없어요ㅠㅠ
 A2. 종료 후 다시 실행해 주세요. 재차 반복해도 반응이 없으면 `config.toml`에 `headless = false` 옵션을 추가하고 어떤 창에서 멈추는지 캡쳐해서 제보해 주세요.
 
 ## 릴리즈 노트
+
+### v0.1.5
+- `config.toml` 관련 오류 메시지가 상세해졌습니다.
 
 ### v0.1.4
 - 이제 공지가 떠도 공지를 닫고 올바르게 동작합니다.

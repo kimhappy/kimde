@@ -25,9 +25,9 @@ struct Config {
 
 impl Config {
     // toml 형식의 파일 io
-    fn read_from(file_name: &str) -> Option< Config > {
-        let text = fs::read_to_string(file_name).ok()?;
-        toml::from_str(text.as_str()).ok()
+    fn read_from(file_name: &str) -> Config {
+        let text = fs::read_to_string(file_name).expect("config.toml을 찾을 수 없습니다.");
+        toml::from_str(text.as_str()).expect("config.toml 구성이 잘못된것 같습니다.")
     }
 
     fn write_to(&self, file_name: &str) -> Option< () > {
@@ -40,8 +40,7 @@ impl Config {
 async fn main() -> Result< (), CmdError > {
     // config.toml 읽기
     let mut config =
-        Config::read_from("config.toml").
-        expect("failed to read \"config.toml\"");
+        Config::read_from("config.toml");
 
     let mut client = match config.headless {
         None | Some(true) => {
@@ -58,8 +57,7 @@ async fn main() -> Result< (), CmdError > {
     client.set_window_rect(0, 0, 1280, 1280).await?;
 
     // 블랙보드 접속
-    client.goto("https://learn.hanyang.ac.kr/ultra/institution-page").await.
-    expect("Failed to access Blackboard");
+    client.goto("https://learn.hanyang.ac.kr/ultra/institution-page").await?;
 
     // 로그인
     let portal_login =
