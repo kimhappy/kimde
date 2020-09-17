@@ -1,214 +1,157 @@
 use std::fs;
-use std::fs::File;
 use std::io::prelude::*;
 use serde::{ Serialize, Deserialize };
 use fantoccini::*;
 use fantoccini::error::*;
 use webdriver::capabilities::Capabilities;
-
-#[derive(Serialize, Deserialize)]
-struct Course {
-    id  : String,
-    name: String,
-    prof: String,
-}
+use serde_json::Value;
+use regex::*;
+use chrono::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
-    port    : u16,
-    id      : String,
-    password: String,
-    semester: String,
-    headless: bool,
-    course  : Option< Vec< Course > >,
+    id       : String,
+    password : String,
+    headless : Option< bool >,
+    no_future: Option< bool >,
+    no_past  : Option< bool >,
+    no_empty : Option< bool >,
+    no_ok    : Option< bool >,
+}
+
+#[derive(Debug)]
+struct Course {
+    id  : String,
+    name: String,
 }
 
 impl Config {
-    // toml 형식의 파일 io
     fn read_from(file_name: &str) -> Config {
-        let text = fs::read_to_string(file_name).expect("config.toml을 찾을 수 없습니다.");
-        toml::from_str(text.as_str()).expect("config.toml 구성이 잘못된것 같습니다.")
-    }
-
-    fn write_to(&self, file_name: &str) -> Option< () > {
-        let mut file = File::create(file_name).ok()?;
-        file.write_all(toml::to_string(self).ok()?.as_bytes()).ok()
+        let text: String = fs::read_to_string(file_name).expect(format!("{}을 찾을 수 없습니다.", file_name).as_str());
+        toml::from_str(text.as_str()).expect(format!("{} 구성이 잘못된 것 같습니다.", file_name).as_str())
     }
 }
 
-#[tokio::main]
-async fn main() -> Result< (), CmdError > {
-    // config.toml 읽기
-    let mut config =
-        Config::read_from("config.toml");
+fn o2b(o: Option< bool >) -> bool {
+    o.is_some() && o.unwrap()
+}
 
-    let mut client =
-        if config.headless {
-            let mut caps = Capabilities::new();
-            let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
-            caps.insert("goog:chromeOptions".to_string(), chrome_opts.clone());
-            Client::with_capabilities(format!("http://localhost:{}", config.port).as_str(), caps).await
-        } else {
-            Client::new(format!("http://localhost:{}", config.port).as_str()).await
-        }.expect("Failed to connect to WebDriver");
+async fn get_client(headless: bool) -> Client {
+    if headless {
+        let mut caps = Capabilities::new();
+        let chrome_opts = serde_json::json!({ "args": ["no-sandbox", "headless", "disable-gpu"] });
+        caps.insert("goog:chromeOptions".to_string(), chrome_opts);
+        Client::with_capabilities(format!("http://localhost:{}", 9515).as_str(), caps).await
+    } else {
+        Client::new(format!("http://localhost:{}", 9515).as_str()).await
+    }.expect("WebDriver에 연결할 수 없습니다.")
+}
 
-    client.set_window_rect(0, 0, 1280, 1280).await?;
+async fn login(client: &mut Client, id: &String, password: &String) {
+    client.goto("https://learn.hanyang.ac.kr/ultra/institution-page").await.unwrap();
 
-    // 블랙보드 접속
-    client.goto("https://learn.hanyang.ac.kr/ultra/institution-page").await?;
+    let portal_login = client.wait_for_find(Locator::Css("#entry-login-custom")).await.unwrap();
+    *client = portal_login.click().await.unwrap();
 
-    // 로그인
-    let portal_login =
-        client.wait_for_find(Locator::Css("#entry-login-custom")).await?;
-    client = portal_login.click().await?;
+    let mut uid = client.wait_for_find(Locator::Css("#uid")).await.unwrap();
+    let mut upw = client.wait_for_find(Locator::Css("#upw")).await.unwrap();
+    let login = client.wait_for_find(Locator::Css("#login_btn")).await.unwrap();
 
-    let mut uid =
-        client.wait_for_find(Locator::Css("#uid")).await?;
-    uid.send_keys(config.id.as_str()).await?;
+    uid.send_keys(id.as_str()).await.unwrap();
+    upw.send_keys(password.as_str()).await.unwrap();
+    *client = login.click().await.unwrap();
+    client.current_url().await.expect("로그인에 실패했습니다.");
+}
 
-    let mut upw =
-        client.wait_for_find(Locator::Css("#upw")).await?;
-    upw.send_keys(config.password.as_str()).await?;
+async fn get_user_id(client: &mut Client) -> String {
+    client.goto("https://learn.hanyang.ac.kr/learn/api/v1/users/me").await.unwrap();
+    let id_json_text = client.find(Locator::Css("pre")).await.unwrap().html(true).await.unwrap();
+    let id_json: Value = serde_json::from_str(id_json_text.as_str()).unwrap();
+    id_json[ "id" ].as_str().unwrap().to_string()
+}
 
-    let login =
-        client.wait_for_find(Locator::Css("#login_btn")).await?;
-    client = login.click().await?;
+async fn get_course(client: &mut Client, user_id: &String) -> Vec< Course > {
+    client.goto(format!("https://learn.hanyang.ac.kr/learn/api/v1/users/{}/memberships?expand=course.effectiveAvailability,course.permissions,courseRole&includeCount=true&limit=10000", user_id).as_str()).await.unwrap();
+    let c_json_text = client.find(Locator::Css("pre")).await.unwrap().html(true).await.unwrap();
+    let c_json: Value = serde_json::from_str(c_json_text.as_str()).unwrap();
+    let ct = c_json[ "results" ].as_array().unwrap();
+    let now_term = ct[ 0 ][ "course" ][ "term" ][ "id" ].as_str().unwrap();
 
-    // 코스 정보가 config.toml에 없으면 긁어와 저장하기
-    if let None = config.course {
-        // 전체 코스 페이지 접속
-        client.goto("https://learn.hanyang.ac.kr/ultra/course").await?;
+    ct.iter().filter_map(|x| {
+        if x[ "course" ][ "term" ][ "id" ].as_str()? == now_term {
+            Some(Course {
+                id  : x[ "course" ][ "id"   ].as_str()?.to_string(),
+                name: x[ "course" ][ "name" ].as_str()?.to_string(),
+            })
+        } else { None }
+    }).collect::< Vec< _ > >()
+}
 
-        // 현재 학기 페이지 접속
-        let sem =
-            client.wait_for_find(Locator::Css("[data-dropdown=\"courses-terms\"]")).await?;
-        client = sem.click().await?;
+async fn attpr(client: &mut Client, config: &Config, course: &Vec< Course >) {
+    let now = chrono::offset::Utc::now();
+    let r = Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2})").unwrap();
+    let no_future = o2b(config.no_future);
+    let no_past   = o2b(config.no_past);
+    let no_empty  = o2b(config.no_empty);
+    let no_ok     = o2b(config.no_ok);
 
-        let now_sem =
-            client.wait_for_find(Locator::Css(format!("[title=\"{}\"]", config.semester).as_str())).await.
-            expect("Invalid semester");
-        client = now_sem.click().await?;
-
-        // 두 번째 보기
-        let tw =
-            client.wait_for_find(Locator::Css("[class=\"toggle-label input label-two js-label-toggle-grid\"]")).await?;
-        client = tw.click().await?;
-
-        // 코스 id, 과목명, 교수명 긁어오기
-        let mut course = Vec::new();
-
-        client.wait_for_find(Locator::Css("[data-course-id] [title]")).await?;
-        client.wait_for_find(Locator::Css("[data-course-id] .instructors [aria-hidden]")).await?;
-
-        let course_blocks =
-            client.find_all(Locator::Css("[data-course-id]")).await?;
-
-        for elem in course_blocks.iter() {
-            client.wait_for(|_| async move {
-                let cid = elem.clone().attr("data-course-id").await.unwrap().unwrap();
-                Ok(!cid.is_empty())
-            }).await.unwrap();
-
-            let id =
-                elem.clone().attr("data-course-id").await?.unwrap();
-
-            let name =
-                elem.clone().find(Locator::Css("[title]")).await?.attr("title").await?.unwrap();
-
-            let prof =
-                elem.clone().find(Locator::Css(".instructors [aria-hidden]")).await?.html(true).await?;
-
-            course.push(Course { id, name, prof });
-        }
-
-        // 파일로 저장
-        config.course = Some(course);
-        config.write_to("config.toml");
-    }
-
-    for Course { id, name, prof } in config.course.unwrap().iter() {
-        // 코스 페이지 접속
-        client.goto(format!("https://learn.hanyang.ac.kr/ultra/courses/{}/outline", id).as_str()).await?;
-
-        // '도서 및 도구' 접속
-        client.wait_for_find(Locator::Css(".element-card[bb-peek-sref][href]")).await?;
-
-        let bs =
-            client.find_all(Locator::Css(".element-card[bb-peek-sref][href]")).await?;
-        let mut tools =
-            bs.last().unwrap().clone();
-        let tools_url =
-            tools.attr("href").await?.unwrap();
-        client.goto(tools_url.as_str()).await?;
-
-        // '온라인 출석 조회' 접속
-        client.wait_for_find(Locator::Css(".placement-link .line-1")).await?;
-
-        let mut ls =
-            client.find_all(Locator::Css(".placement-link .line-1")).await?;
-        let mut cc = ls[ 1 ].clone();
-
-        for e in ls.iter_mut() {
-            let con = e.html(true).await.unwrap();
-
-            if con.contains("출석") {
-                cc = e.clone();
-                break
-            }
-        }
-
-        // 공지 닫기
-        match cc.clone().click().await {
-            Ok(cl) => client = cl,
-            Err(_) => {
-                let xb = client.wait_for_find(Locator::Css("[data-analytics-id=\"course.announcements.modal.close.button\"]")).await?;
-                xb.click().await?;
-                client = cc.clone().click().await?
-            }
-        }
-
+    for cs in course.iter() {
         let (mut P, mut F): (i32, i32) = (0, 0);
-        let mut ncs = Vec::new();
+        let mut csv = Vec::new();
 
-        // lti iframe 불러오기
-        let lti =
-            client.wait_for_find(Locator::Css("[title=\"LTI 실행\"]")).await?;
-        client = lti.enter_frame().await?;
+        client.goto(format!("https://learn.hanyang.ac.kr/webapps/blackboard/execute/blti/launchPlacement?blti_placement_id=_17_1&course_id={}&from_ultra=true", cs.id).as_str()).await.unwrap();
 
-        // 강의가 없으면 건너뛰기
         if let Err(_) = client.find(Locator::Css("[class=\"noItems $emptyMsgCustomClass\"]")).await {
-            // 모두 표시
-            let show_all =
-                client.wait_for_find(Locator::Css("#listContainer_showAllButton")).await?;
-            client = show_all.click().await?;
+            let show_all = client.wait_for_find(Locator::Css("#listContainer_showAllButton")).await.unwrap();
+            *client = show_all.click().await.unwrap();
 
-            // 강의 목록
-            let mut rows =
-                client.find_all(Locator::Css("#listContainer_databody > *")).await?;
+            let mut rows = client.find_all(Locator::Css("#listContainer_databody > *")).await.unwrap();
 
-            // 출결 확인
             for row in rows.iter_mut() {
-                let mut es = row.find_all(Locator::Css(".table-data-cell-value")).await?;
+                let mut es = row.find_all(Locator::Css(".table-data-cell-value")).await.unwrap();
+                let cs = es[ 1 ].html(true).await.unwrap();
+                let mut ds = r.captures_iter(cs.as_str());
+                let start = Utc.datetime_from_str(&ds.next().unwrap()[ 0 ], "%Y-%m-%d %H:%M").unwrap();
+                let   end = Utc.datetime_from_str(&ds.next().unwrap()[ 0 ], "%Y-%m-%d %H:%M").unwrap();
+                let    PF = es[ 6 ].html(true).await.unwrap();
 
-                match es[ 6 ].html(true).await?.as_str() {
-                    "P" => P += 1,
-                    "F" => {
-                        F += 1;
-                        ncs.push(es[ 1 ].html(true).await?);
-                    },
-                    _   => ()
+                if (no_past && end < now) || (no_future && now < start) { continue }
+
+                if PF.as_str() == "P" {
+                    P += 1;
+                } else {
+                    F += 1;
+                    csv.push(cs);
                 }
             }
         }
 
-        println!("<{}({})> [{} / {}] {} ", name, prof, P, P + F, if F == 0 { "✔️" } else { "❌" });
+        if (no_empty && P + F == 0) || (no_ok && F == 0) {
+            continue;
+        }
 
-        for nc in ncs {
+        println!("<{}> [{} / {}] {} ", cs.name, P, P + F, if F == 0 { "✔️" } else { "❌" });
+
+        for nc in csv {
             println!("    {} 🔥 ", nc);
         }
     }
 
     println!("출결 확인을 완료했습니다!");
     std::io::stdin().read(&mut [0]).unwrap();
+}
+
+#[tokio::main]
+async fn main() -> Result< (), CmdError > {
+    let config = Config::read_from("config.toml");
+    let mut client = get_client(config.headless.is_none() || config.headless.unwrap()).await;
+
+    client.set_window_rect(0, 0, 1280, 1280).await?;
+    login(&mut client, &config.id, &config.password).await;
+
+    let user_id = get_user_id(&mut client).await;
+    let course = get_course(&mut client, &user_id).await;
+
+    attpr(&mut client, &config, &course).await;
     client.close().await
 }
