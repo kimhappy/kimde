@@ -25,8 +25,8 @@
 
 ### 2. 웹드라이버 설치
 
-- [Google Chrome](https://www.google.com/chrome/)을 설치합니다. 이미 설치되어 있다면, 최신 버전으로 업데이트해 줍니다. 현재 stable 최신 버전은 85입니다.
-- 운영체제에 맞는 [Chrome Driver](https://chromedriver.chromium.org/downloads) 버전 85를 다운받아, 적당한 곳에 압축을 풀어줍니다.
+- [Google Chrome](https://www.google.com/chrome/)을 설치합니다. 이미 설치되어 있다면, 최신 버전으로 업데이트해 줍니다. 현재 stable 최신 버전은 86입니다.
+- 운영체제와 버전에 맞는 [Chrome Driver](https://chromedriver.chromium.org/downloads)를 다운받아, 적당한 곳에 압축을 풀어줍니다.
 
 ### 3. 설정 파일 작성
 
